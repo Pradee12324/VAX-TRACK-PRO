@@ -7,7 +7,6 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Patients from "./pages/Patients";
-import Vaccinations from "./pages/Vaccinations";
 import ADRReport from "./pages/ADRReport";
 import Quiz from "./pages/Quiz";
 import NotFound from "./pages/NotFound";
@@ -26,8 +25,6 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/patients" element={<Patients />} />
           <Route path="/patients/new" element={<Patients />} />
-          <Route path="/vaccinations" element={<Vaccinations />} />
-          <Route path="/vaccinations/new" element={<Vaccinations />} />
           <Route path="/adr" element={<ADRReport />} />
           <Route path="/adr/new" element={<ADRReport />} />
           <Route path="/quiz" element={<Quiz />} />
