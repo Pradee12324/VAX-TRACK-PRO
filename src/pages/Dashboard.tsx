@@ -2,157 +2,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Users, Syringe, AlertCircle, Calendar, TrendingUp } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { formatDistanceToNow } from "date-fns";
-
-interface VaccinationWithPatient {
-  id: string;
-  vaccine_name: string;
-  administered_at: string;
-  next_dose_due: string | null;
-  status: string;
-  follow_up_type: string | null;
-  patient: {
-    full_name: string;
-  };
-}
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalVaccinations: 0,
-    activePatients: 0,
-    pendingFollowups: 0,
-    adrReports: 0,
-  });
-  const [recentVaccinations, setRecentVaccinations] = useState<VaccinationWithPatient[]>([]);
-  const [followUpVaccinations, setFollowUpVaccinations] = useState<VaccinationWithPatient[]>([]);
-  const [userName, setUserName] = useState("Dr. Singh");
+  const stats = [
+    { label: "Total Vaccinations", value: "1,247", icon: Syringe, trend: "+12%" },
+    { label: "Active Patients", value: "856", icon: Users, trend: "+8%" },
+    { label: "Pending Follow-ups", value: "23", icon: Calendar, trend: "-5%" },
+    { label: "ADR Reports", value: "7", icon: AlertCircle, trend: "+2" },
+  ];
 
-  useEffect(() => {
-    checkAuth();
-    fetchDashboardData();
-  }, []);
-
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-
-    // Fetch user profile
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("user_id", user.id)
-      .single();
-
-    if (profile?.full_name) {
-      setUserName(profile.full_name);
-    }
-  };
-
-  const fetchDashboardData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Fetch total vaccinations
-      const { count: vaccinationCount } = await supabase
-        .from("vaccinations")
-        .select("*", { count: "exact", head: true })
-        .eq("pharmacist_id", user.id);
-
-      // Fetch active patients
-      const { count: patientCount } = await supabase
-        .from("patients")
-        .select("*", { count: "exact", head: true })
-        .eq("pharmacist_id", user.id);
-
-      // Fetch pending follow-ups
-      const { count: followUpCount } = await supabase
-        .from("vaccinations")
-        .select("*", { count: "exact", head: true })
-        .eq("pharmacist_id", user.id)
-        .eq("status", "follow_up_due");
-
-      // Fetch ADR reports
-      const { count: adrCount } = await supabase
-        .from("adr_reports")
-        .select("*", { count: "exact", head: true })
-        .eq("pharmacist_id", user.id);
-
-      setStats({
-        totalVaccinations: vaccinationCount || 0,
-        activePatients: patientCount || 0,
-        pendingFollowups: followUpCount || 0,
-        adrReports: adrCount || 0,
-      });
-
-      // Fetch recent vaccinations with patient names
-      const { data: vaccinations, error: vacError } = await supabase
-        .from("vaccinations")
-        .select(`
-          id,
-          vaccine_name,
-          administered_at,
-          next_dose_due,
-          status,
-          follow_up_type,
-          patient:patients(full_name)
-        `)
-        .eq("pharmacist_id", user.id)
-        .order("administered_at", { ascending: false })
-        .limit(5);
-
-      if (vacError) throw vacError;
-      setRecentVaccinations(vaccinations as any || []);
-
-      // Fetch follow-up vaccinations
-      const { data: followUps, error: followUpError } = await supabase
-        .from("vaccinations")
-        .select(`
-          id,
-          vaccine_name,
-          administered_at,
-          next_dose_due,
-          status,
-          follow_up_type,
-          patient:patients(full_name)
-        `)
-        .eq("pharmacist_id", user.id)
-        .eq("status", "follow_up_due")
-        .order("next_dose_due", { ascending: true });
-
-      if (followUpError) throw followUpError;
-      setFollowUpVaccinations(followUps as any || []);
-
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
-
-  const formatFollowUpType = (type: string | null) => {
-    if (!type) return "";
-    return type === "1_week" ? "1 Week" : type === "1_month" ? "1 Month" : type;
-  };
+  const recentVaccinations = [
+    { patient: "Rajesh Kumar", vaccine: "COVID-19 Booster", date: "2025-11-27", status: "Completed" },
+    { patient: "Priya Sharma", vaccine: "Hepatitis B", date: "2025-11-27", status: "Follow-up Due" },
+    { patient: "Amit Patel", vaccine: "Influenza", date: "2025-11-26", status: "Completed" },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -173,7 +37,7 @@ const Dashboard = () => {
               <Link to="/adr" className="text-muted-foreground hover:text-foreground transition-colors">ADR Reports</Link>
               <Link to="/quiz" className="text-muted-foreground hover:text-foreground transition-colors">Quiz</Link>
             </nav>
-            <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+            <Button variant="outline">Sign Out</Button>
           </div>
         </div>
       </header>
@@ -182,63 +46,29 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Welcome back, {userName}</h2>
+          <h2 className="text-3xl font-bold mb-2">Welcome back, Dr. Singh</h2>
           <p className="text-muted-foreground">Here's what's happening with your vaccination practice today</p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="shadow-card hover:shadow-elevated transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Vaccinations
-              </CardTitle>
-              <Syringe className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.totalVaccinations}</div>
-              <p className="text-xs text-muted-foreground mt-1">All time vaccinations</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card hover:shadow-elevated transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Active Patients
-              </CardTitle>
-              <Users className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.activePatients}</div>
-              <p className="text-xs text-muted-foreground mt-1">Registered patients</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card hover:shadow-elevated transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Pending Follow-ups
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.pendingFollowups}</div>
-              <p className="text-xs text-muted-foreground mt-1">Doses due</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card hover:shadow-elevated transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                ADR Reports
-              </CardTitle>
-              <AlertCircle className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.adrReports}</div>
-              <p className="text-xs text-muted-foreground mt-1">Total reports</p>
-            </CardContent>
-          </Card>
+          {stats.map((stat, idx) => (
+            <Card key={idx} className="shadow-card hover:shadow-elevated transition-all duration-300">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.label}
+                </CardTitle>
+                <stat.icon className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{stat.value}</div>
+                <p className="text-xs text-accent flex items-center gap-1 mt-1">
+                  <TrendingUp className="h-3 w-3" />
+                  {stat.trend} from last month
+                </p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Quick Actions */}
@@ -277,35 +107,22 @@ const Dashboard = () => {
                 <CardDescription>Latest vaccination records from your practice</CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <p className="text-center text-muted-foreground py-8">Loading...</p>
-                ) : recentVaccinations.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No vaccinations recorded yet</p>
-                ) : (
-                  <div className="space-y-4">
-                    {recentVaccinations.map((vax) => (
-                      <div key={vax.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                        <div>
-                          <p className="font-medium">{vax.patient.full_name}</p>
-                          <p className="text-sm text-muted-foreground">{vax.vaccine_name}</p>
-                          {vax.follow_up_type && (
-                            <p className="text-xs text-accent mt-1">
-                              Follow-up: {formatFollowUpType(vax.follow_up_type)}
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium">
-                            {formatDistanceToNow(new Date(vax.administered_at), { addSuffix: true })}
-                          </p>
-                          <p className={`text-xs ${vax.status === 'completed' ? 'text-accent' : 'text-warning'}`}>
-                            {vax.status === 'completed' ? 'Completed' : 'Follow-up Due'}
-                          </p>
-                        </div>
+                <div className="space-y-4">
+                  {recentVaccinations.map((vax, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div>
+                        <p className="font-medium">{vax.patient}</p>
+                        <p className="text-sm text-muted-foreground">{vax.vaccine}</p>
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <div className="text-right">
+                        <p className="text-sm font-medium">{vax.date}</p>
+                        <p className={`text-xs ${vax.status === 'Completed' ? 'text-accent' : 'text-warning'}`}>
+                          {vax.status}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -314,38 +131,12 @@ const Dashboard = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Upcoming Follow-ups</CardTitle>
-                <CardDescription>Patients due for follow-up doses (1 week / 1 month)</CardDescription>
+                <CardDescription>Patients due for follow-up doses</CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <p className="text-center text-muted-foreground py-8">Loading...</p>
-                ) : followUpVaccinations.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No follow-up vaccinations scheduled
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {followUpVaccinations.map((vax) => (
-                      <div key={vax.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                        <div>
-                          <p className="font-medium">{vax.patient.full_name}</p>
-                          <p className="text-sm text-muted-foreground">{vax.vaccine_name}</p>
-                          <p className="text-xs text-accent mt-1">
-                            Follow-up Type: {formatFollowUpType(vax.follow_up_type)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium">
-                            Due: {vax.next_dose_due ? formatDistanceToNow(new Date(vax.next_dose_due), { addSuffix: true }) : 'N/A'}
-                          </p>
-                          <p className="text-xs text-warning">
-                            {vax.next_dose_due ? new Date(vax.next_dose_due).toLocaleDateString() : ''}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <p className="text-center text-muted-foreground py-8">
+                  23 patients scheduled for follow-up vaccinations this week
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
