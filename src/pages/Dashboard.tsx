@@ -80,7 +80,7 @@ const Dashboard = () => {
             </Link>
           </Button>
           <Button className="h-20" asChild>
-            <Link to="/vaccinations/new" className="flex flex-col gap-2">
+            <Link to="/vaccinations/record" className="flex flex-col gap-2">
               <Syringe className="h-6 w-6" />
               <span>Record Vaccination</span>
             </Link>
