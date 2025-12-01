@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Patients from "./pages/Patients";
 import ADRReport from "./pages/ADRReport";
 import Quiz from "./pages/Quiz";
+import RecordVaccination from "./pages/RecordVaccination";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/adr" element={<ADRReport />} />
           <Route path="/adr/new" element={<ADRReport />} />
           <Route path="/quiz" element={<Quiz />} />
+          <Route path="/vaccinations/record" element={<RecordVaccination />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
